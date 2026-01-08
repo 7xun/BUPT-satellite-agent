@@ -48,10 +48,21 @@ pip install streamlit langchain langchain-openai pandas oss2 duckdb torch faiss-
 
 ### 2. 配置项目
 
-打开 `config.py`，确保以下配置正确：
-- `DASHSCOPE_API_KEY`: 阿里云百炼/通义千问 API Key。
-- `OSS_ACCESS_KEY_ID` / `SECRET`: 阿里云 OSS 访问凭证。
-- `OSS_BUCKET_NAME`: 存储数据的 Bucket 名称。
+本项目的敏感配置（如 OSS 密钥）已调整为通过环境变量读取，请在运行前设置：
+
+**Windows (PowerShell):**
+```powershell
+$env:OSS_ACCESS_KEY_ID="你的AccessKeyID"
+$env:OSS_ACCESS_KEY_SECRET="你的AccessKeySecret"
+```
+
+**Linux / macOS:**
+```bash
+export OSS_ACCESS_KEY_ID="你的AccessKeyID"
+export OSS_ACCESS_KEY_SECRET="你的AccessKeySecret"
+```
+
+其他通用配置（如 API Key, Bucket 名称）仍可在 `config.py` 中查看和修改。
 
 ### 3. 运行应用
 
