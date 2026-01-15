@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>卫星状态看板</title>
+	<!-- 这里有改动，使用了本地js文件 -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script> -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+	<!-- <script src="./js/echarts.min.js"></script> -->
+	<script src="./js/chart.js"></script>
+	<script src="./js/seven_days_data.js"></script>
     <style>
         * {
             margin: 0;
@@ -25,6 +28,42 @@
             max-width: 1400px;
             margin: 0 auto;
         }
+		
+		#seven_days_chart_container {
+			display: flex
+		}
+		
+		#legendContainer {
+			margin-left: 20px;
+			max-height: 400px;
+			overflow-y: auto;
+			min-width: 200px;
+		}
+		
+		.legendItem {
+			display: flex;
+			align-items: center;
+			flex-wrap: nowrap;
+		}
+		
+		.legendColor {
+			width: 12px;
+			height: 12px;
+			margin-right: 8px;
+			flex-shrink: 0;
+		}
+		
+		.legendCheckbox {
+			margin-right: 8px;
+			flex-shrink: 0;
+		}
+		
+		.legendLabel {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			flex-grow: 1;
+		}
 
         header {
             text-align: center;
@@ -201,6 +240,13 @@
             margin-bottom: 40px;
             overflow-x: auto;
         }
+		
+		select {
+			min-width: 5%;
+			max-width: 50%;
+			height: 4%;
+			font-size: 18px
+		}
 
         table {
             width: 100%;
@@ -360,64 +406,80 @@
                 本部分展示卫星各项关键指标的历史数据统计和趋势预测分析。通过数据可视化，
                 可以直观地了解卫星各子系统的运行状况，为运维决策提供数据支持。
             </p>
+			
+			
+			<div id="seven_days_chart_container">
+				<canvas id="telemetryChart" width="800" height="600"></canvas>
+				<div id="legendContainer" height="600"></div>
+			</div>
+			
+			</br></br>
+			
+			<div class="container">
+				<select id="seven_days_indicatorSelect", width="20">
+				<!-- 选项将通过JS动态生成 -->
+				</select>
+				<table>
+					<thead>
+						<tr>
+							<th>日期</th>
+							<th>数值</th>
+							<th>变化</th>
+							<th>状态</th>
+						</tr>
+					</thead>
+					<tbody id="seven_days_tableBody">
+						<!-- 数据行将通过JS动态生成 -->
+					</tbody>
+				</table>
+			</div>
+			
+			<script>
+				// 获取DOM元素
+				const select = document.getElementById('seven_days_indicatorSelect');
+				const tbody = document.getElementById('seven_days_tableBody');
 
-            <div class="table-title">我是标题</div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>指标名称</th>
-                            <th>字段1</th>
-                            <th>字段2</th>
-                            <th>字段3</th>
-                            <th>字段4</th>
-                            <th>字段5</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>指标1</td>
-                            <td>98.5%</td>
-                            <td>2.3万次</td>
-                            <td>上升 5.2%</td>
-                            <td>正常</td>
-                            <td>2024-01-15</td>
-                        </tr>
-                        <tr>
-                            <td>指标2</td>
-                            <td>95.8%</td>
-                            <td>1.8万次</td>
-                            <td>下降 2.1%</td>
-                            <td>警告</td>
-                            <td>2024-01-14</td>
-                        </tr>
-                        <tr>
-                            <td>指标3</td>
-                            <td>99.2%</td>
-                            <td>3.1万次</td>
-                            <td>上升 8.7%</td>
-                            <td>正常</td>
-                            <td>2024-01-16</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+				// 动态生成下拉选项
+				seven_days_data.indicators.forEach((indicator, index) => {
+					const option = document.createElement('option');
+					option.value = index;
+					option.textContent = `${indicator.type} - ${indicator.name}`;
+					select.appendChild(option);
+				});
 
-            <div class="chart-container">
-                <div class="chart-item">
-                    <div id="chart1"></div>
-                </div>
-                <div class="chart-item">
-                    <div id="chart2"></div>
-                </div>
-                <div class="chart-item">
-                    <div id="chart3"></div>
-                </div>
-                <div class="chart-item">
-                    <div id="chart4"></div>
-                </div>
-            </div>
+				// 渲染表格数据
+				function renderTable(index) {
+					tbody.innerHTML = ''; // 清空现有内容
+					const indicator = seven_days_data.indicators[index];
+					
+					for (let i = 1; i <= 7; i++) {
+						const dayKey = `day${i}`;
+						const dayData = indicator[dayKey];
+						const date = seven_days_data.days[dayKey];
+						
+						const row = document.createElement('tr');
+						row.innerHTML = `
+							<td>${date}</td>
+							<td>${dayData.value}</td>
+							<td>${i === 1 ? '---' : dayData.change}</td>
+							<td>${dayData.status}</td>
+						`;
+						tbody.appendChild(row);
+					}
+				}
 
+				// 监听下拉框变化
+				select.addEventListener('change', (e) => {
+					renderTable(e.target.value);
+				});
+
+				// 初始渲染第一个指标
+				renderTable(0);
+			</script>
+			
+			
+			
+			</br></br>
             <div class="table-title">我是标题</div>
             <div class="table-container">
                 <table>
@@ -461,6 +523,141 @@
             </div>
         </div>
     </div>
+	
+	
+	
+	<script>
+        let chart;
+        let datasets = [];
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            createLegend();
+        });
+
+        function initChart() {
+            const dates = Object.values(seven_days_data.days).slice(1);
+            const indicators = seven_days_data.indicators;
+            
+            datasets = indicators.map((indicator, index) => {
+                const values = [
+                    parseFloat(indicator.day2.change.replace('%', '')),
+                    parseFloat(indicator.day3.change.replace('%', '')),
+                    parseFloat(indicator.day4.change.replace('%', '')),
+                    parseFloat(indicator.day5.change.replace('%', '')),
+                    parseFloat(indicator.day6.change.replace('%', '')),
+                    parseFloat(indicator.day7.change.replace('%', ''))
+                ];
+
+                const color = getRandomColor();
+                
+                return {
+                    label: indicator.name,
+                    data: values,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.1,
+                    hidden: false,
+                    originalIndex: index
+                };
+            });
+
+            const ctx = document.getElementById('telemetryChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: datasets.filter(d => !d.hidden)
+                },
+                options: {
+                    responsive: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+							ticks: {
+								callback: function(value) {
+									return value + '%';  // 显示百分比
+								}
+							}
+                        }
+                    },
+					plugins: {
+						title: {
+							display: true,
+							text: '卫星遥测指标变化历史',
+							font: {
+								size: 16
+							},
+							padding: {
+								top: 10,
+								bottom: 30
+							}
+						}
+					}
+                }
+            });
+        }
+
+        function createLegend() {
+            const legendContainer = document.getElementById('legendContainer');
+            legendContainer.innerHTML = '</br></br></br><h4>指标选择</h4>';
+            
+            datasets.forEach((dataset, index) => {
+                const item = document.createElement('div');
+                item.className = 'legendItem';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.dataset.index = index;
+                checkbox.onchange = toggleDataset;
+				checkbox.className = 'legendCheckbox';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legendColor';
+                colorBox.style.backgroundColor = dataset.borderColor;
+                
+                const label = document.createElement('span');
+                label.textContent = dataset.label;
+				label.className = 'legendLabel';
+                
+                item.appendChild(checkbox);
+                item.appendChild(colorBox);
+                item.appendChild(label);
+                legendContainer.appendChild(item);
+            });
+        }
+
+        function toggleDataset(event) {
+            const index = event.target.dataset.index;
+            const isChecked = event.target.checked;
+            
+            // 更新数据集隐藏状态
+            datasets[index].hidden = !isChecked;
+            
+            // 更新图表数据
+            chart.data.datasets = datasets.filter(d => !d.hidden);
+            chart.update();
+        }
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+
+
+	
+	
+	
+	
+
+
 
     <script>
         // 根据数值更新value元素的文字颜色状态
@@ -546,11 +743,16 @@
             }
         `;
         document.head.appendChild(style);
-
+		
+		
+		
+		
+		
         // 初始化 ECharts 柱状图
         function initCharts() {
+			day1 = "2024-01-01", day2 = "111", day3 = "fsfs";
             // 日期数据（横坐标）
-            const dates = ['2024-01-14', '2024-01-15', '2024-01-16'];
+            const dates = [day1, day2, day3];
             
             // 图表配置
             const chartOption = {
@@ -605,75 +807,9 @@
                 }]
             });
 
-            const chart2 = echarts.init(document.getElementById('chart2'));
-            chart2.setOption({
-                ...chartOption,
-                title: {
-                    text: '图表2',
-                    left: 'center',
-                    textStyle: {
-                        fontSize: 14,
-                        fontWeight: 'normal'
-                    }
-                },
-                series: [{
-                    ...chartOption.series[0],
-                    barWidth: 60,
-                    data: [180, 160, 220]
-                }]
-            });
+        }  
 
-            const chart3 = echarts.init(document.getElementById('chart3'));
-            chart3.setOption({
-                ...chartOption,
-                title: {
-                    text: '图表3',
-                    left: 'center',
-                    textStyle: {
-                        fontSize: 14,
-                        fontWeight: 'normal'
-                    }
-                },
-                series: [{
-                    ...chartOption.series[0],
-                    barWidth: 60,
-                    data: [100, 140, 180]
-                }]
-            });
-
-            const chart4 = echarts.init(document.getElementById('chart4'));
-            chart4.setOption({
-                ...chartOption,
-                title: {
-                    text: '图表4',
-                    left: 'center',
-                    textStyle: {
-                        fontSize: 14,
-                        fontWeight: 'normal'
-                    }
-                },
-                series: [{
-                    ...chartOption.series[0],
-                    barWidth: 60,
-                    data: [200, 180, 160]
-                }]
-            });
-
-            // 响应式调整
-            window.addEventListener('resize', function() {
-                chart1.resize();
-                chart2.resize();
-                chart3.resize();
-                chart4.resize();
-            });
-        }
-
-        // 页面加载完成后初始化图表
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof echarts !== 'undefined') {
-                initCharts();
-            }
-        });
+        
     </script>
 </body>
 </html>
